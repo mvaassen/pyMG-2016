@@ -14,6 +14,58 @@ class MyMultigrid(MultigridBase):
         assert np.log2(ndofs+1) >= nlevels
         super(MyMultigrid, self).__init__(ndofs, nlevels)
 
+        self.vh_list = []
+
+    def do_fmg_cycle_recursive(self, rhs, nu0, nu1, nu2, level):
+        """Recursive implementation of a V-cycle
+
+                This can also be used inside an FMG-cycle!
+
+                Args:
+                    v0 (numpy.array): initial values on finest level
+                    rhs (numpy.array): right-hand side on finest level
+                    nu1 (int): number of downward smoothing steps
+                    nu2 (int): number of upward smoothing steps
+                    level (int): current level
+
+                Returns:
+                    numpy.array: solution vector on current level
+                """
+
+        assert self.nlevels > level >= 0
+
+        # set intial conditions
+        self.fh[level] = rhs
+
+        # downward cycle
+        if level < self.nlevels - 1:
+
+            # restrict
+            self.fh[level + 1] = self.trans[level].restrict(self.fh[level] -
+                                                            self.smoo[level].A.dot(self.vh[level]))
+            # recursive call to fmg-cycle
+            self.vh[level + 1] = self.do_fmg_cycle_recursive(self.fh[level + 1], nu0, nu1, nu2, level + 1)
+        # on coarsest level
+        else:
+
+            # solve on coarsest level
+            self.vh[level] = sLA.spsolve(self.Acoarse, self.fh[level])
+
+            return self.vh[level]
+
+        # correct
+        self.vh[level] = self.trans[level].prolong(self.vh[level + 1])
+
+        self.vh_list.append(self.vh[level])
+
+        # post-smoothing
+        for i in range(nu0):
+            self.vh[level] = self.do_v_cycle(self.vh[level], self.fh[level], nu1, nu2, level)
+
+        return self.vh[level]
+
+
+
     def do_v_cycle(self, v0, rhs, nu1, nu2, lstart):
         """Straightforward implementation of a V-cycle
 
@@ -115,3 +167,6 @@ class MyMultigrid(MultigridBase):
             self.vh[level] = self.smoo[level].smooth(self.fh[level], self.vh[level])
 
         return self.vh[level]
+
+    def get_vh_list(self):
+        return self.vh_list

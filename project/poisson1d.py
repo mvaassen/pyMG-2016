@@ -54,7 +54,7 @@ class Poisson1D(ProblemBase):
         Returns:
             numpy.ndarray: the right-hand side vector of size :attr:`ndofs`
         """
-        return np.zeros(ndofs)
+        return np.ones(ndofs)
 
     @property
     def u_exact(self):

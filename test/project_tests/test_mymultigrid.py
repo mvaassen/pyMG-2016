@@ -39,6 +39,17 @@ class test_mymultigrid(unittest.TestCase):
 
         assert err < 1E-12, 'V-cycles do not bring solution down far enough'
 
+    def test_can_solve_homogeneous_problem_fmgcycle(self):
+        res = 1
+        u = self.u
+        while res > 1E-10:
+            u = self.mymg.do_fmg_cycle_recursive(self.prob.rhs, 1, nu1=self.nu1, nu2=self.nu2, level=0)
+            res = np.linalg.norm(self.prob.A.dot(u) - self.prob.rhs, np.inf)
+
+        err = np.linalg.norm(u, np.inf)
+
+        assert err < 1E-12, 'V-cycles do not bring solution down far enough'
+
     def test_converges_for_inhomogeneous_problem_vcycle(self):
         k = 6
         xvalues = np.array([(i+1) * self.prob.dx for i in range(self.prob.ndofs)])

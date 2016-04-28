@@ -36,7 +36,8 @@ if __name__ == "__main__":
         u = np.zeros(uex.size)
         while res > 1E-10 and niter < 10:
             niter += 1
-            u = mymg.do_v_cycle(u, prob.rhs, 2, 2, 0)
+            #u = mymg.do_v_cycle(u, prob.rhs, 2, 2, 0)
+            u = mymg.do_fmg_cycle_recursive(prob.rhs, 1, 2, 2, 0)
             res = LA.norm(prob.A.dot(u)-prob.rhs, np.inf)
             err.append(LA.norm(u-uex, np.inf))
             print(niter,res,err[-1])
